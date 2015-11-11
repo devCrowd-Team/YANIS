@@ -1,0 +1,27 @@
+{
+  "name": "Yanis",
+  "version": "0.0.1",
+  "description": "Yet Another Node.JS Identity Server. This will be a simple solution for an identification server.",
+  "keywords": [
+    "OAtuth",
+    "OAuth2",
+    "JWT",
+    "Identity Server",
+    "HMac"
+  ],
+  "author": "@janekf",
+  "repository": {
+    "type": "git",
+    "url": ""
+  },
+  "dependencies": {
+    "bunyan": "^1.5.1",
+    "crypto": "0.0.3",
+    "nedb": "^1.3.0",
+    "q": "^1.4.1",
+    "restify": "^4.0.3",
+    "underscore": "^1.8.3",
+    "uuid": "^2.0.1"
+  },
+  "license": "MIT"
+}
