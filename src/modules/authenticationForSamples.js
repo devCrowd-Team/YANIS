@@ -2,6 +2,8 @@
 
 var Q = require('Q');
 var crypto = require('crypto');
+var serverConfig = require('../../server-config');
+var autorizationHeaderFields = serverConfig.AutorizationHeaderFields;
 
 exports.ComputeSampleHash = function (req, res, next){
 	validateSample(req)
@@ -20,21 +22,16 @@ exports.ComputeSampleHash = function (req, res, next){
 function validateSample(request) {
 	var d = Q.defer();
 	
-	var method = request.headers['yanis-method'];
-	var uri = request.headers['yanis-uri'];
-	var parameters = request.headers['yanis-parameters'];
-	var timestamp = request.headers['yanis-timestamp'];
+	var method = request.headers[autorizationHeaderFields.Method];
+	var uri = request.headers[autorizationHeaderFields.HostUri];
+	var timestamp = request.headers[autorizationHeaderFields.Timestamp];
 	
 	if(method == null){
 		d.reject(new Error("Invalid YANIS-Method Header"));
 	}
 	
 	if(uri == null){
-		d.reject(new Error("Invalid YANIS-Uri Header"));
-	}
-	
-	if(parameters == null){
-		d.reject(new Error("Invalid YANIS-Parameters Header"))
+		d.reject(new Error("Invalid YANIS-HostUri Header"));
 	}
 	
 	if(timestamp == null){
@@ -44,7 +41,6 @@ function validateSample(request) {
 	d.resolve({
 		method     : method,
 		uri        : uri,
-		parameters : parameters,
 		timestamp  : timestamp
 	});
 	
@@ -54,20 +50,25 @@ function validateSample(request) {
 function authenticateSample(requestParameter) {
 	var d = Q.defer();
 	
-	var password = "test";
+	var algorithm = serverConfig.HashingAlgorithm;
+	var samplePassword = serverConfig.SamplePassword;
 	var hashableMessage = requestParameter.method
-						+ requestParameter.timestamp
 						+ requestParameter.uri
-						+ requestParameter.parameters;
+						+ requestParameter.timestamp;
 						
+	var hashes = crypto.getHashes();
+	
+	console.log(hashes);
+	
 	var signatureOfRequestParameters = 
-			crypto.createHmac("sha256", password)
+			crypto.createHmac(algorithm, samplePassword)
 				  .update(hashableMessage)
 				  .digest("hex");
 											 
 	d.resolve({
 		signature : signatureOfRequestParameters,
-		password : password
+		password : samplePassword,
+		algorith : algorithm
 	});
 	
 	return d.promise;

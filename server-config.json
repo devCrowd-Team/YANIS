@@ -1,5 +1,14 @@
 {
 	"Host" : "127.0.0.1",
 	"Port" : "3000",
-	"Name" : "YANIS - Yet Another Node Identity Server"
+	"Name" : "YANIS - Yet Another Node Identity Server",
+	"AutorizationHeaderFields" : {
+		"Method" : "yanis-method",
+		"HostUri" : "yanis-hosturi",
+		"Parameters" : "yanis-parameters",
+		"Timestamp" : "yanis-timestamp",
+		"Authentication" : "yanis-authentication"
+	},
+	"SamplePassword" : "test",
+	"HashingAlgorithm" : "sha512"
 }
