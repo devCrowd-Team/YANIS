@@ -1,5 +1,6 @@
 'use strict'
 
+var Q = require('Q');
 var bunyan = require('bunyan');
 var Datastore = require('nedb');
 var packageConfig = require('../../package');
@@ -8,12 +9,21 @@ var logging = bunyan.createLogger({name: packageConfig.name});
 
 exports.GetHashedPasswordFor = function(userId){
 	
-	usersDb.find({ userId : userId}, function(err, account){
-		if(err == null){
-			
+	var d = Q.defer();
+	
+	usersDb.findOne({ userId : userId}, function(err, account){
+		if(err){
+			d.reject(err);
+		}
+		
+		if(account){
+			d.resolve(account.hashedPassword);
+		} else {
+			d.reject(new Error("Unknown userId"))
 		}
 	});
 	
+	return d.promise
 };
 
 exports.SetHashedPassword = function(req, res, next){

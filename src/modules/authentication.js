@@ -75,19 +75,18 @@ function validate(request) {
 function getHashedPassword(requestParameter){
 	var d = Q.defer();
 	
-	users.GetHashedPasswordFor(requestParameter.userId, function(err, hashedPassword)
-	{
-		if(err != null){
-			d.reject(err);
-		} else {
-			d.resolve(requestParameter, hashedPassword);
-		}
-	});
-	
+	users.GetHashedPasswordFor(requestParameter.userId)
+		.then(function(hashedPassword){
+			
+			requestParameter.hashedPassword = hashedPassword;
+			
+			d.resolve(requestParameter);
+		},  d.reject);
+		
 	return d.promise;
 }
 
-function authenticate(requestParameter, hashedPassword) {
+function authenticate(requestParameter) {
 	logging.info("Authenticate Request " + requestParameter);
 	
 	var d = Q.defer();
@@ -97,7 +96,7 @@ function authenticate(requestParameter, hashedPassword) {
 						+ requestParameter.timestamp;
 						
 	var signatureOfRequestParameters = 
-			crypto.createHmac(serverConfig.HashingAlgorithm, hashedPassword)
+			crypto.createHmac(serverConfig.HashingAlgorithm, requestParameter.hashedPassword)
 				.update(hashableMessage)
 				.digest("hex");
 											 
