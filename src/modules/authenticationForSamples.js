@@ -1,6 +1,6 @@
 'use strict'
 
-var Q = require('Q');
+var Q = require('q');
 var crypto = require('crypto');
 var serverConfig = require('../../server-config');
 var autorizationHeaderFields = serverConfig.AutorizationHeaderFields;

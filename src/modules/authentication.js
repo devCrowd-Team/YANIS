@@ -1,6 +1,6 @@
 'use strict'
 
-var Q 				= require('Q');
+var Q 				= require('q');
 var bunyan 			= require('bunyan');
 var crypto 			= require('crypto');
 var cache 			= require('memory-cache');
