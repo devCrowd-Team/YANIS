@@ -7,8 +7,9 @@
 		"HostUri" : "yanis-hosturi",
 		"Parameters" : "yanis-parameters",
 		"Timestamp" : "yanis-timestamp",
-		"Authentication" : "yanis-authentication"
+		"Authentication" : "authentication"
 	},
 	"SamplePassword" : "test",
-	"HashingAlgorithm" : "sha512"
+	"HashingAlgorithm" : "sha512",
+	"CacheDuration" : 60000
 }

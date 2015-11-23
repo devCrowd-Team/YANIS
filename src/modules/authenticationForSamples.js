@@ -68,7 +68,7 @@ function authenticateSample(requestParameter) {
 	d.resolve({
 		signature : signatureOfRequestParameters,
 		password : samplePassword,
-		algorith : algorithm
+		algorithm : algorithm
 	});
 	
 	return d.promise;

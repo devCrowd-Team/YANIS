@@ -1,11 +1,12 @@
 'use strict'
 
-var Q = require('Q');
-var bunyan = require('bunyan');
-var crypto = require('crypto');
-var users = require('./users');
-var packageConfig = require('../../package');
-var serverConfig = require('../../server-config');
+var Q 				= require('Q');
+var bunyan 			= require('bunyan');
+var crypto 			= require('crypto');
+var cache 			= require('memory-cache');
+var users 			= require('./users');
+var packageConfig 	= require('../../package');
+var serverConfig 	= require('../../server-config');
 
 var autorizationHeaderFields = serverConfig.AutorizationHeaderFields;
 var logging = bunyan.createLogger({name: packageConfig.name});
@@ -13,6 +14,7 @@ var logging = bunyan.createLogger({name: packageConfig.name});
 exports.ByHMac = function(req, res, next){
 		
 	validate(req)
+	 .then(putSignatureIntoCache)
 	 .then(getHashedPassword)
 	 .then(authenticate)
 	 .then(function(signature){
@@ -24,7 +26,7 @@ exports.ByHMac = function(req, res, next){
 		logging.error(error);
 		
 		res.writeHeader(403,{"Content-Type":"text/html"})
-		res.end("You are not authorized");
+		res.end("You are not authorized, cause:\n" + error);
 		next();
 	 });
 };
@@ -52,13 +54,21 @@ function validate(request) {
 		d.reject(new Error("Invalid YANIS-Timestamp Header"))
 	}
 	
+	if( ! isDateValid(timestamp)){
+		d.reject(new Error("Invalid Timestamp"))
+	}
+	
 	if(authorization == null){		
-		d.reject(new Error("Invalid YANIS-Authentication Header"))
+		d.reject(new Error("Invalid Authentication Header"))
 	} else {
 		var authorizationParts = authorization.split(":");
 		
 		userId = authorizationParts[0];
 		signature = authorizationParts[1];
+	}
+	
+	if( ! isSignatureValid(signature)){
+		d.reject(new Error("Invalid Signature"))
 	}
 	
 	d.resolve({
@@ -72,15 +82,66 @@ function validate(request) {
 	return d.promise;
 };
 
-function getHashedPassword(requestParameter){
+function isDateValid(timestamp){
+
+	var parsedTimestamp = Date.parse(timestamp);
+	
+	if(parsedTimestamp)
+	{
+		var serverTimestamp = Date.now();
+		
+		if((parsedTimestamp < cacheDurationBefore(serverTimestamp)) 
+		|| (parsedTimestamp > cacheDurationAfter(serverTimestamp))){
+			return false;
+		}
+		
+		return true
+	} 
+	
+	return false;
+}
+
+function cacheDurationBefore(serverDate){
+	
+	var cacheDuration = parseInt(serverConfig.CacheDuration);
+	
+	return serverDate - cacheDuration;
+}
+
+function cacheDurationAfter(serverDate){
+	
+	var cacheDuration = parseInt(serverConfig.CacheDuration);
+	
+	return serverDate + cacheDuration;
+}
+
+function isSignatureValid(signature){
+	if(cache.get(signature)){
+		logging.warn("Signature always cached")
+		
+		return false;
+	} 
+	
+	return true;
+}
+
+function putSignatureIntoCache(reqestParameters){
+	if(cache.get(reqestParameters.signature) == null){
+		cache.put(reqestParameters.signature, reqestParameters.signature, serverConfig.CacheDuration)	
+	}
+	
+	return reqestParameters;
+}
+
+function getHashedPassword(requestParameters){
 	var d = Q.defer();
 	
-	users.GetHashedPasswordFor(requestParameter.userId)
+	users.GetHashedPasswordFor(requestParameters.userId)
 		.then(function(hashedPassword){
 			
-			requestParameter.hashedPassword = hashedPassword;
+			requestParameters.hashedPassword = hashedPassword;
 			
-			d.resolve(requestParameter);
+			d.resolve(requestParameters);
 		},  d.reject);
 		
 	return d.promise;
