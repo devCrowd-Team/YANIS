@@ -55,10 +55,6 @@ function authenticateSample(requestParameter) {
 	var hashableMessage = requestParameter.method
 						+ requestParameter.uri
 						+ requestParameter.timestamp;
-						
-	var hashes = crypto.getHashes();
-	
-	console.log(hashes);
 	
 	var signatureOfRequestParameters = 
 			crypto.createHmac(algorithm, samplePassword)
