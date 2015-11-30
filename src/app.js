@@ -1,10 +1,15 @@
 'use strict'
 
-var restify = require('restify');
-var bunyan = require('bunyan');
-var serverConfig = require('../server-config');
-var packageConfig = require('../package');
-var routes = require('./routes');
+var restify 			= require('restify');
+var bunyan 				= require('bunyan');
+
+var serverConfig 		= require('../server-config');
+var packageConfig 		= require('../package');
+
+var routes 				= require('./routes');
+var authenticate 		= require('./modules/authentication');
+var authenticateSample 	= require('./modules/authenticationForSamples');
+var users 				= require('./modules/users');
 
 var logging = bunyan.createLogger({name: packageConfig.name})
 
@@ -31,7 +36,13 @@ server.on('uncaughtException', function(req, res, route, error){
 });
 
 /* -- Routes -- */
-routes.SetupFor(server);
+var handlers = {
+	ByHMac : authenticate.ByHMac,
+	ComputeSampleHash : authenticateSample.ComputeSampleHash,
+	SetHashedPassword : users.SetHashedPassword
+}
+
+routes.SetupFor(server, handlers);
 
 /* Start Server */
 server.listen(serverConfig.Port, serverConfig.Host, function(){
