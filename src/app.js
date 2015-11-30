@@ -28,6 +28,7 @@ server.use(function logger(req, res, next){
 	logging.info('Method: %s -- Url: %s', req.method, res.uri);
 	next();
 });
+
 /* -- Unexpected Exception Handling -- */
 server.on('uncaughtException', function(req, res, route, error){
 	logging.error(error);
@@ -42,7 +43,7 @@ var handlers = {
 	SetHashedPassword : users.SetHashedPassword
 }
 
-routes.SetupFor(server, handlers);
+routes.setupFor(server, handlers);
 
 /* Start Server */
 server.listen(serverConfig.Port, serverConfig.Host, function(){

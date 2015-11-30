@@ -1,8 +1,6 @@
 'use strict'
 
-
-
-exports.SetupFor = function(server, handle){
+function setupFor(server, handle){
 
 	server.get('/', function(req,res,next){
 		res.send('everything is fine');
@@ -13,3 +11,5 @@ exports.SetupFor = function(server, handle){
 	server.get({path: '/SampleRequest', flags : 'i'}, handle.ComputeSampleHash);
 	server.post({path: '/HashedPassword', flags : 'i'}, handle.SetHashedPassword)
 };
+
+exports.setupFor = setupFor;
