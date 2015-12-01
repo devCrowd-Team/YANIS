@@ -4,6 +4,7 @@ var Q 				= require('q');
 var bunyan 			= require('bunyan');
 var crypto 			= require('crypto');
 var cache 			= require('memory-cache');
+var uuid 			= require('uuid');
 var users 			= require('./users');
 var packageConfig 	= require('../../package');
 var serverConfig 	= require('../../server-config');
@@ -11,7 +12,7 @@ var serverConfig 	= require('../../server-config');
 var autorizationHeaderFields = serverConfig.AutorizationHeaderFields;
 var logging = bunyan.createLogger({name: packageConfig.name});
 
-exports.ByHMac = function(req, res, next){
+exports.byHMac = function(req, res, next){
 		
 	validate(req)
 	 .then(putSignatureIntoCache)
@@ -22,13 +23,18 @@ exports.ByHMac = function(req, res, next){
 	 })
 	 .fail(function(error)
 	 {
-		logging.info("Request not authorized")
-		logging.error(error);
-		
-		res.writeHeader(403,{"Content-Type":"text/html"})
-		res.end("You are not authorized, cause:\n" + error);
-		next();
+		sendRejection(error, res, next);
 	 });
+};
+
+exports.validateToken = function(req, res, next){
+	var token = req.query.token;
+	
+	if(isTokenValid(token)){
+		removeFromCacheAndSendSuccess(token, res, next);
+	}
+	
+	//sendTokenFailure();
 };
 
 function validate(request) {
@@ -65,6 +71,8 @@ function validate(request) {
 		
 		userId = authorizationParts[0];
 		signature = authorizationParts[1];
+		
+		logging.info(signature);
 	}
 	
 	if( ! isSignatureValid(signature)){
@@ -117,12 +125,21 @@ function cacheDurationAfter(serverDate){
 
 function isSignatureValid(signature){
 	if(cache.get(signature)){
-		logging.warn("Signature always cached")
+		logging.warn("Signature already cached")
 		
 		return false;
 	} 
 	
 	return true;
+}
+
+function isTokenValid(token){
+		
+	if(cache.get(token)){
+		return true;
+	} 
+	
+	return false;
 }
 
 function putSignatureIntoCache(reqestParameters){
@@ -133,10 +150,14 @@ function putSignatureIntoCache(reqestParameters){
 	return reqestParameters;
 }
 
+function putTokenIntoCache(token){
+	cache.put(token, token, serverConfig.CacheDuration);
+}
+
 function getHashedPassword(requestParameters){
 	var d = Q.defer();
 	
-	users.GetHashedPasswordFor(requestParameters.userId)
+	users.getHashedPasswordFor(requestParameters.userId)
 		.then(function(hashedPassword){
 			
 			requestParameters.hashedPassword = hashedPassword;
@@ -170,16 +191,44 @@ function authenticate(requestParameter) {
 	return d.promise;
 };
 
+function generateNewTokenAndCacheIt(){
+	var id = uuid.v4();
+	putTokenIntoCache(id);
+	
+	return id;
+}
+
 function sendAuthorization(signature,res,next){
 	logging.info("Request authorized with signature %s", signature)
 	
 	var deferred = Q.defer();
-		
-	res.writeHeader(200,{"Content-Type":"text/html"})
-	res.end("You are authorized");
+	
+	var token = generateNewTokenAndCacheIt();
+	
+	res.writeHeader(200,{"Content-Type":"application/json"})
+	res.end(JSON.stringify({success:true, token:token}));
+	
 	next();
 		
 	deferred.resolve();
 
 	return deferred.promise;
 };
+
+function sendRejection(err, res, next){
+	logging.info("Request not authorized")
+	logging.error(err);
+	
+	res.writeHeader(403,{"Content-Type":"application/json"})
+	res.end(JSON.stringify({success : false}));
+	next();
+}
+
+function removeFromCacheAndSendSuccess(token, res, next){
+	
+	cache.del(token);
+	logging.info("Token %s removed", token)
+	
+	res.writeHeader(200,{"Content-Type":"application/json"});
+	res.end(JSON.stringify({success:true}));
+}

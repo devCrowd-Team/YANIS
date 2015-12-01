@@ -5,7 +5,7 @@ var crypto = require('crypto');
 var serverConfig = require('../../server-config');
 var autorizationHeaderFields = serverConfig.AutorizationHeaderFields;
 
-exports.ComputeSampleHash = function (req, res, next){
+exports.computeSampleHash = function (req, res, next){
 	validateSample(req)
 	 .then(authenticateSample)
 	 .then(function(signature){

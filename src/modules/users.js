@@ -7,11 +7,14 @@ var packageConfig = require('../../package');
 var usersDb = new Datastore({ filename: 'users.db', autoload: true });
 var logging = bunyan.createLogger({name: packageConfig.name});
 
-exports.GetHashedPasswordFor = function(userId){
+exports.getHashedPasswordFor = function(userId){
+	
+	logging.info('GetHashedPassword for: ' + userId)
 	
 	var d = Q.defer();
 	
 	usersDb.findOne({ userId : userId}, function(err, account){
+		
 		if(err){
 			d.reject(err);
 		}
@@ -26,7 +29,7 @@ exports.GetHashedPasswordFor = function(userId){
 	return d.promise
 };
 
-exports.SetHashedPassword = function(req, res, next){
+exports.setHashedPassword = function(req, res, next){
 	
 	var account = {
 		userId : req.body.userId,

@@ -38,9 +38,10 @@ server.on('uncaughtException', function(req, res, route, error){
 
 /* -- Routes -- */
 var handlers = {
-	ByHMac : authenticate.ByHMac,
-	ComputeSampleHash : authenticateSample.ComputeSampleHash,
-	SetHashedPassword : users.SetHashedPassword
+	ByHMac : authenticate.byHMac,
+	ComputeSampleHash : authenticateSample.computeSampleHash,
+	SetHashedPassword : users.setHashedPassword,
+	ValidationOfToken : authenticate.validateToken
 }
 
 routes.setupFor(server, handlers);
