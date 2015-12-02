@@ -32,9 +32,9 @@ exports.validateToken = function(req, res, next){
 	
 	if(isTokenValid(token)){
 		removeFromCacheAndSendSuccess(token, res, next);
+	} else{
+		sendTokenFailure(token, res, next);	
 	}
-	
-	//sendTokenFailure();
 };
 
 function validate(request) {
@@ -125,8 +125,6 @@ function cacheDurationAfter(serverDate){
 
 function isSignatureValid(signature){
 	if(cache.get(signature)){
-		logging.warn("Signature already cached")
-		
 		return false;
 	} 
 	
@@ -134,7 +132,6 @@ function isSignatureValid(signature){
 }
 
 function isTokenValid(token){
-		
 	if(cache.get(token)){
 		return true;
 	} 
@@ -216,7 +213,7 @@ function sendAuthorization(signature,res,next){
 };
 
 function sendRejection(err, res, next){
-	logging.info("Request not authorized")
+	logging.warn("Request not authorized")
 	logging.error(err);
 	
 	res.writeHeader(403,{"Content-Type":"application/json"})
@@ -231,4 +228,13 @@ function removeFromCacheAndSendSuccess(token, res, next){
 	
 	res.writeHeader(200,{"Content-Type":"application/json"});
 	res.end(JSON.stringify({success:true}));
+	next();
+}
+
+function sendTokenFailure(token, res, next){
+	logging.warn("Token %s expired", token)
+	
+	res.writeHeader(403,{"Content-Type":"application/json"});
+	res.end(JSON.stringify({success:false}));
+	next();
 }

@@ -154,43 +154,43 @@ describe('Routing', function(){
 					result.body.password.should.be.exactly(serverConfig.SamplePassword);
 					expectedSignature = result.body.signature;
 					
+					// first request to get valid token
+					request(serverUrl)
+						.get('/IsAuthenticated')
+						.set('yanis-method', method)
+						.set('yanis-hosturi', testUri)
+						.set('yanis-timestamp', testTimestamp)
+						.set('authentication','test:' + expectedSignature)
+						.expect(200)
+						.expect('Content-Type', 'application/json')
+						.end(function(err, result){
+												
+							result.body.should.have.property('success', true);
+							result.body.should.have.property('token');
+							result.body.token.length.should.be.above(0);
+							result.body.token.should.be.text;
+							
+							validToken = result.body.token;
+							
+							// Request to validate token
+							request(serverUrl)
+								.get('/IsValidToken')
+								.query('token=' + validToken)
+								.expect(200)
+								.expect('Content-Type', 'application/json')
+								.expect({success:true})
+								.end(function(err, result){
+									
+									// Request with same token
+									request(serverUrl)
+										.get('/IsValidToken')
+										.query('token=' + validToken)
+										.expect(403)
+										.expect('Content-Type', 'application/json')
+										.expect({success:false}, done);
+								});
+						});
 				});
-			
-			// first request to get valid token
-			request(serverUrl)
-				.get('/IsAuthenticated')
-				.set('yanis-method', method)
-				.set('yanis-hosturi', testUri)
-				.set('yanis-timestamp', testTimestamp)
-				.set('authentication','test:' + expectedSignature)
-				.expect(200)
-				.expect('Content-Type', 'application/json')
-				.end(function(err, result){
-										
-					result.body.should.have.property('success', true);
-					result.body.should.have.property('token');
-					result.body.token.length.should.be.above(0);
-					result.body.token.should.be.text;
-					
-					validToken = result.body.token;
-					
-				});
-			
-			// Request to validate token
-			request(serverUrl)
-				.get('/IsValidToken')
-				.query('token=' + validToken)
-				.expect(200)
-				.expect('Content-Type', 'application/json')
-				.expect({success:true});
-			
-			// Request with same token
-			request(serverUrl)
-				.get('/IsValidToken')
-				.query('token=' + validToken)
-				.expect(403)
-				.expect('Content-Type', 'application/json')
-				.expect({success:false}, done);
 		});
 		
 	});
