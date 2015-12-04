@@ -57,8 +57,9 @@ describe('Routing', function(){
 												
 							result.body.should.have.property('success', true);
 							result.body.should.have.property('token');
-							result.body.token.length.should.be.above(0);
-							result.body.token.should.be.text;
+							result.body.token.key.length.should.be.above(0);
+							result.body.token.key.should.be.text;
+							result.body.token.expired.should.be.exactly("one shot")
 							
 							request(serverUrl)
 								.get('/IsAuthenticated')
@@ -68,7 +69,7 @@ describe('Routing', function(){
 								.set('authentication','test:' + expectedSignature)
 								.expect(403)
 								.expect('Content-Type', 'application/json')
-								.expect({success:false}, done);
+								.expect({success:false, reason:"Request not authorized"}, done);
 						});
 				});
 		});
@@ -110,7 +111,7 @@ describe('Routing', function(){
 								.expect(200)
 								.expect('Content-Type', 'application/json')
 								.end(function(err, result){
-									token1 = result.body.token;
+									token1 = result.body.token.key;
 									
 									// second request to get valid token
 									request(serverUrl)
@@ -122,7 +123,7 @@ describe('Routing', function(){
 										.expect(200)
 										.expect('Content-Type', 'application/json')
 										.end(function(err, result){											
-											token2 = result.body.token;
+											token2 = result.body.token.key;
 											
 											token1.should.not.be.equal(token2);
 											
@@ -165,12 +166,7 @@ describe('Routing', function(){
 						.expect('Content-Type', 'application/json')
 						.end(function(err, result){
 												
-							result.body.should.have.property('success', true);
-							result.body.should.have.property('token');
-							result.body.token.length.should.be.above(0);
-							result.body.token.should.be.text;
-							
-							validToken = result.body.token;
+							validToken = result.body.token.key;
 							
 							// Request to validate token
 							request(serverUrl)
@@ -187,7 +183,7 @@ describe('Routing', function(){
 										.query('token=' + validToken)
 										.expect(403)
 										.expect('Content-Type', 'application/json')
-										.expect({success:false}, done);
+										.expect({success:false, reason:"Token is expired"}, done);
 								});
 						});
 				});

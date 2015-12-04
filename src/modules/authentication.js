@@ -22,11 +22,19 @@ exports.byHMac = function(req, res, next){
 	 .then(getHashedPassword)
 	 .then(authenticate)
 	 .then(function(signature){
-		 sendAuthorization(signature, res, next);
+		 
+		logging.info("Request authorized with signature %s", signature);
+		
+		var token = uuid.v4();
+		cache.add(token)
+		success(token, res,next);
 	 })
 	 .fail(function(error)
 	 {
-		sendRejectedAuthentication(error, res, next);
+		logging.warn("Request not authorized")
+		logging.error(error);
+		
+		failure("Request not authorized", res, next);
 	 });
 };
 
@@ -36,10 +44,10 @@ exports.validateToken = function(req, res, next){
 	if(cache.contains(token)){
 		cache.remove(token);
 		logging.info("Token %s removed", token)
-		sendTokenSuccess(token, res, next);
+		success(token, res, next);
 	} else{
 		logging.warn("Token %s expired", token)
-		sendTokenFailure(token, res, next);	
+		failure("Token is expired", res, next);	
 	}
 };
 
@@ -163,46 +171,14 @@ function authenticate(requestParameter) {
 	return d.promise;
 };
 
-function generateNewTokenAndCacheIt(){
-	var token = uuid.v4();
-	cache.add(token);
-	
-	return token;
-}
-
-function sendAuthorization(signature,res,next){
-	logging.info("Request authorized with signature %s", signature)
-	
-	var deferred = Q.defer();
-	
-	var token = generateNewTokenAndCacheIt();
-	
-	res.writeHeader(200,{"Content-Type":"application/json"})
-	res.end(JSON.stringify({success:true, token:token}));
-	next();
-		
-	deferred.resolve();
-
-	return deferred.promise;
-};
-
-function sendRejectedAuthentication(err, res, next){
-	logging.warn("Request not authorized")
-	logging.error(err);
-	
-	res.writeHeader(403,{"Content-Type":"application/json"})
-	res.end(JSON.stringify({success : false}));
-	next();
-}
-
-function sendTokenSuccess(token, res, next){
+function success(token, res, next){
 	res.writeHeader(200,{"Content-Type":"application/json"});
-	res.end(JSON.stringify({success:true}));
+	res.end(JSON.stringify({success:true, token:{key:token, expired:"one shot"}}));
 	next();
 }
 
-function sendTokenFailure(token, res, next){
+function failure(reason, res, next){
 	res.writeHeader(403,{"Content-Type":"application/json"});
-	res.end(JSON.stringify({success:false}));
+	res.end(JSON.stringify({success:false, reason:reason}));
 	next();
 }
