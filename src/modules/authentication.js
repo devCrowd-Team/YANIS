@@ -2,8 +2,8 @@
 
 var Q 				= require('q');
 var bunyan 			= require('bunyan');
-var cache 			= require('memory-cache');
 var uuid 			= require('uuid');
+var cache 			= require('./cache');
 var hash 			= require('./hash');
 var users 			= require('./users');
 var packageConfig 	= require('../../package');
@@ -15,7 +15,10 @@ var logging = bunyan.createLogger({name: packageConfig.name});
 exports.byHMac = function(req, res, next){
 		
 	validate(req)
-	 .then(putSignatureIntoCache)
+	 .then(function(reqParameters){
+		 cache.add(reqParameters.signature);
+		 return reqParameters;
+	 })
 	 .then(getHashedPassword)
 	 .then(authenticate)
 	 .then(function(signature){
@@ -23,16 +26,19 @@ exports.byHMac = function(req, res, next){
 	 })
 	 .fail(function(error)
 	 {
-		sendRejection(error, res, next);
+		sendRejectedAuthentication(error, res, next);
 	 });
 };
 
 exports.validateToken = function(req, res, next){
 	var token = req.query.token;
 	
-	if(isTokenValid(token)){
-		removeFromCacheAndSendSuccess(token, res, next);
+	if(cache.contains(token)){
+		cache.remove(token);
+		logging.info("Token %s removed", token)
+		sendTokenSuccess(token, res, next);
 	} else{
+		logging.warn("Token %s expired", token)
 		sendTokenFailure(token, res, next);	
 	}
 };
@@ -75,7 +81,7 @@ function validate(request) {
 		logging.info(signature);
 	}
 	
-	if( ! isSignatureValid(signature)){
+	if(cache.contains(signature)){
 		d.reject(new Error("Invalid Signature"))
 	}
 	
@@ -123,34 +129,6 @@ function cacheDurationAfter(serverDate){
 	return serverDate + cacheDuration;
 }
 
-function isSignatureValid(signature){
-	if(cache.get(signature)){
-		return false;
-	} 
-	
-	return true;
-}
-
-function isTokenValid(token){
-	if(cache.get(token)){
-		return true;
-	} 
-	
-	return false;
-}
-
-function putSignatureIntoCache(reqestParameters){
-	if(cache.get(reqestParameters.signature) == null){
-		cache.put(reqestParameters.signature, reqestParameters.signature, serverConfig.CacheDuration)	
-	}
-	
-	return reqestParameters;
-}
-
-function putTokenIntoCache(token){
-	cache.put(token, token, serverConfig.CacheDuration);
-}
-
 function getHashedPassword(requestParameters){
 	var d = Q.defer();
 	
@@ -186,10 +164,10 @@ function authenticate(requestParameter) {
 };
 
 function generateNewTokenAndCacheIt(){
-	var id = uuid.v4();
-	putTokenIntoCache(id);
+	var token = uuid.v4();
+	cache.add(token);
 	
-	return id;
+	return token;
 }
 
 function sendAuthorization(signature,res,next){
@@ -201,7 +179,6 @@ function sendAuthorization(signature,res,next){
 	
 	res.writeHeader(200,{"Content-Type":"application/json"})
 	res.end(JSON.stringify({success:true, token:token}));
-	
 	next();
 		
 	deferred.resolve();
@@ -209,7 +186,7 @@ function sendAuthorization(signature,res,next){
 	return deferred.promise;
 };
 
-function sendRejection(err, res, next){
+function sendRejectedAuthentication(err, res, next){
 	logging.warn("Request not authorized")
 	logging.error(err);
 	
@@ -218,19 +195,13 @@ function sendRejection(err, res, next){
 	next();
 }
 
-function removeFromCacheAndSendSuccess(token, res, next){
-	
-	cache.del(token);
-	logging.info("Token %s removed", token)
-	
+function sendTokenSuccess(token, res, next){
 	res.writeHeader(200,{"Content-Type":"application/json"});
 	res.end(JSON.stringify({success:true}));
 	next();
 }
 
 function sendTokenFailure(token, res, next){
-	logging.warn("Token %s expired", token)
-	
 	res.writeHeader(403,{"Content-Type":"application/json"});
 	res.end(JSON.stringify({success:false}));
 	next();
