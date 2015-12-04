@@ -8,7 +8,6 @@ function setupFor(server, handle){
 	});
 	
 	server.get({path: '/IsAuthenticated', flags: 'i'}, handle.ByHMac);
-	server.get({path: '/SampleRequest', flags : 'i'}, handle.ComputeSampleHash);
 	server.get({path: '/IsValidToken?:token', flags:'i'}, handle.ValidationOfToken);
 	server.post({path: '/HashedPassword', flags : 'i'}, handle.SetHashedPassword);
 };

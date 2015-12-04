@@ -8,7 +8,6 @@ var packageConfig 		= require('../package');
 
 var routes 				= require('./routes');
 var authenticate 		= require('./modules/authentication');
-var authenticateSample 	= require('./modules/authenticationForSamples');
 var users 				= require('./modules/users');
 
 var logging = bunyan.createLogger({name: packageConfig.name})
@@ -39,7 +38,6 @@ server.on('uncaughtException', function(req, res, route, error){
 /* -- Routes -- */
 var handlers = {
 	ByHMac : authenticate.byHMac,
-	ComputeSampleHash : authenticateSample.computeSampleHash,
 	SetHashedPassword : users.setHashedPassword,
 	ValidationOfToken : authenticate.validateToken
 }
