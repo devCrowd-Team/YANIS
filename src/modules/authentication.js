@@ -2,9 +2,9 @@
 
 var Q 				= require('q');
 var bunyan 			= require('bunyan');
-var crypto 			= require('crypto');
 var cache 			= require('memory-cache');
 var uuid 			= require('uuid');
+var hash 			= require('./hash');
 var users 			= require('./users');
 var packageConfig 	= require('../../package');
 var serverConfig 	= require('../../server-config');
@@ -174,10 +174,7 @@ function authenticate(requestParameter) {
 						+ requestParameter.uri
 						+ requestParameter.timestamp;
 						
-	var signatureOfRequestParameters = 
-			crypto.createHmac(serverConfig.HashingAlgorithm, requestParameter.hashedPassword)
-				.update(hashableMessage)
-				.digest("hex");
+	var signatureOfRequestParameters = hash.compute(requestParameter.hashedPassword, hashableMessage);
 											 
 	if(signatureOfRequestParameters === requestParameter.signature){
 		d.resolve(requestParameter.signature);
