@@ -7,3 +7,4 @@
 * Web UI to manage Keys and Users
 * one shot token for URIs
 * remove SampleRequest path
+* structure-log instead of bunyan
