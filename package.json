@@ -27,6 +27,9 @@
   "license": "MIT",
   "devDependencies": {
     "should": "^7.1.1",
-    "supertest": "^1.1.0"
+    "supertest": "^1.1.0",
+    "babel-cli": "*",
+    "babel-preset-es2015":"*",
+    "tsd": "*"
   }
 }

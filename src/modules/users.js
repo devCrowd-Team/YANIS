@@ -4,7 +4,7 @@ var Q = require('q');
 var bunyan = require('bunyan');
 var Datastore = require('nedb');
 var packageConfig = require('../../package');
-var usersDb = new Datastore({ filename: 'users.db', autoload: true });
+var usersDb = new Datastore({ filename: '../databases/users.db', autoload: true });
 var logging = bunyan.createLogger({name: packageConfig.name});
 
 exports.getHashedPasswordFor = function(userId){

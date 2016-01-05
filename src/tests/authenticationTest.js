@@ -1,28 +1,29 @@
 'use strict'
 
 var Datastore 		= require('nedb');
-var testDb 			= new Datastore({ filename: 'test.db', autoload: true });
 var request 		= require('supertest');
 var should 			= require('should');
 var hash			= require('../modules/hash');
 var serverConfig 	= require('../../server-config');
+var testDb 			= new Datastore({ filename: '../databases/users.db', autoload: true });
 
 var serverUrl = 'http://' + serverConfig.Host + ":" + serverConfig.Port;
 
 describe('Routing', function(){
-	
-	before(function(done){
+    
+    beforeEach(function(done){
 		
-		var testAccount = {
-			userId : 'test',
-			hashedPassword : serverConfig.SamplePassword
-		};
-	
-		testDb.insert(testAccount, function(err, newAccount){
+        var testAccount = {
+            userId : 'test',
+            hashedPassword : serverConfig.SamplePassword
+        };
+                
+        testDb.remove(testAccount, function(err, result)
+		{
 			if(err){
 				throw err;
 			} else {
-				done();
+                testDb.insert(testAccount, done);
 			}
 		});
 	});
@@ -105,9 +106,7 @@ describe('Routing', function(){
 							done();
 							
 						});
-					
 				});
-			
 		})
 		
 		it('should deny second request with the same token', function(done){
@@ -151,18 +150,5 @@ describe('Routing', function(){
 						});
 				});
 		});
-		
 	});
-	
-	after(function(done){
-		testDb.remove({userId:'test'}, function(err, result)
-		{
-			if(err){
-				throw err;
-			} else {
-				done();
-			}
-		});
-	});
-	
 });
